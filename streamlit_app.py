@@ -1,5 +1,13 @@
 import streamlit as st
-from openai import OpenAI
+from openai import AzureOpenAI
+from dotenv import load_dotenv
+import os
+
+# Get configuration settings 
+load_dotenv()
+azure_oai_endpoint = os.getenv("AZURE_OAI_ENDPOINT")
+azure_oai_key = os.getenv("AZURE_OAI_KEY")
+azure_oai_deployment = os.getenv("AZURE_OAI_DEPLOYMENT")
 
 # Show title and description.
 st.title("💬 Chatbot")
@@ -13,12 +21,15 @@ st.write(
 # Alternatively, you can store the API key in `./.streamlit/secrets.toml` and access it
 # via `st.secrets`, see https://docs.streamlit.io/develop/concepts/connections/secrets-management
 openai_api_key = st.text_input("OpenAI API Key", type="password")
-if not openai_api_key:
-    st.info("Please add your OpenAI API key to continue.", icon="🗝️")
+if openai_api_key != azure_oai_key:
+    st.info("Error - Please add your OpenAI API key to continue.", icon="🗝️")
 else:
 
     # Create an OpenAI client.
-    client = OpenAI(api_key=openai_api_key)
+    client = AzureOpenAI(
+            base_url=f"{azure_oai_endpoint}/openai/deployments/{azure_oai_deployment}/extensions",
+            api_key=azure_oai_key,
+            api_version="2023-09-01-preview")
 
     # Create a session state variable to store the chat messages. This ensures that the
     # messages persist across reruns.
