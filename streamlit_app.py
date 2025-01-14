@@ -8,6 +8,9 @@ load_dotenv()
 azure_oai_endpoint = os.getenv("AZURE_OAI_ENDPOINT")
 azure_oai_key = os.getenv("AZURE_OAI_KEY")
 azure_oai_deployment = os.getenv("AZURE_OAI_DEPLOYMENT")
+azure_search_endpoint = os.getenv("AZURE_SEARCH_ENDPOINT")
+azure_search_key = os.getenv("AZURE_SEARCH_KEY")
+azure_search_index = os.getenv("AZURE_SEARCH_INDEX")
 
 # Show title and description.
 st.title("💬 POC - Chatbot")
@@ -17,10 +20,23 @@ st.write(
 
 # Create an OpenAI client.
 client = AzureOpenAI(
-        azure_endpoint=azure_oai_endpoint,
+        azure_endpoint = azure_oai_endpoint,
         api_key=azure_oai_key,
-        api_version="2024-02-15-preview"
+        api_version="2024-08-01-preview"
         )
+
+# Configure your data source
+extension_config = dict(dataSources = [  
+    { 
+        "type": "AzureCognitiveSearch", 
+        "parameters": { 
+            "endpoint":azure_search_endpoint, 
+            "key": azure_search_key, 
+            "indexName": azure_search_index,
+        }
+    }
+    ]
+)
 
 # Create a session state variable to store the chat messages. This ensures that the
 # messages persist across reruns.
@@ -45,10 +61,28 @@ if prompt := st.chat_input("Posez votre question:"):
     stream = client.chat.completions.create(
         model=azure_oai_deployment,
         messages=[
-            {"role": m["role"], "content": m["content"]}
-            for m in st.session_state.messages
+            {"role": "system", "content": "You are an assistant."},
+            *[
+                {"role": m["role"], "content": m["content"]}
+                for m in st.session_state.messages
+            ]
         ],
         stream=True,
+        extra_body={
+            "data_sources":[
+                {
+                    "type": "azure_search",
+                    "parameters": {
+                        "endpoint": azure_search_endpoint,
+                        "index_name": azure_search_index,
+                        "authentication": {
+                            "type": "api_key",
+                            "key": azure_search_key,
+                        }
+                    }
+                }
+            ],
+        }
     )
 
     # Stream the response to the chat using `st.write_stream`, then store it in 
