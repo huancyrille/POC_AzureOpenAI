@@ -1,4 +1,4 @@
 streamlit
 openai
 pytest
-dotenv == 1.0.1
+dotenv
