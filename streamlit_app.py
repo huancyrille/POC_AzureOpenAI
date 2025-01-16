@@ -11,6 +11,7 @@ azure_oai_deployment = os.getenv("AZURE_OAI_DEPLOYMENT")
 azure_search_endpoint = os.getenv("AZURE_SEARCH_ENDPOINT")
 azure_search_key = os.getenv("AZURE_SEARCH_KEY")
 azure_search_index = os.getenv("AZURE_SEARCH_INDEX")
+azure_search_index_2 = os.getenv("AZURE_SEARCH_INDEX_2")
 
 # Show title and description.
 st.title("💬 POC - Chatbot")
@@ -61,7 +62,7 @@ if prompt := st.chat_input("Posez votre question:"):
     stream = client.chat.completions.create(
         model=azure_oai_deployment,
         messages=[
-            {"role": "system", "content": "You are an assistant."},
+            {"role": "system", "content": "You are an assistant and you retrieve project names, users based on CV and you're capable on determining who worked on a project."},
             *[
                 {"role": m["role"], "content": m["content"]}
                 for m in st.session_state.messages
@@ -70,11 +71,12 @@ if prompt := st.chat_input("Posez votre question:"):
         stream=True,
         extra_body={
             "data_sources":[
+                
                 {
                     "type": "azure_search",
                     "parameters": {
                         "endpoint": azure_search_endpoint,
-                        "index_name": azure_search_index,
+                        "index_name": azure_search_index_2,
                         "authentication": {
                             "type": "api_key",
                             "key": azure_search_key,
@@ -90,3 +92,9 @@ if prompt := st.chat_input("Posez votre question:"):
     with st.chat_message("assistant"):
         response = st.write_stream(stream)
     st.session_state.messages.append({"role": "assistant", "content": response}) 
+
+    #print("Citations:")
+    #citations = stream.choices[0].message.context["messages"][0]["content"]
+    #citation_json = json.loads(citations)
+    #for c in citation_json["citations"]:
+    #    print("  Title: " + c['title'] + "\n    URL: " + c['url'])
